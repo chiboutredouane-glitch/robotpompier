@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Robot Pompier – Commande par Bluetooth</string>
+    <string name="title">ROBOT POMPIER</string>
+    <string name="subtitle">Commande par Bluetooth</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="close">Fermer</string>
+    <string name="disconnected">Déconnecté</string>
+    <string name="movement">DÉPLACEMENT</string>
+    <string name="pump">POMPE À EAU</string>
+    <string name="forward">↑\nAvancer</string>
+    <string name="backward">↓\nReculer</string>
+    <string name="left">←\nGauche</string>
+    <string name="right">→\nDroite</string>
+    <string name="pump_on">Activer la pompe</string>
+    <string name="pump_off">Désactiver la pompe</string>
+    <string name="pump_unknown">Pompe : état inconnu</string>
+    <string name="hold">Maintenir pour déplacer</string>
+    <string name="hint">Connectez un appareil déjà appairé pour commencer.</string>
+</resources>
