@@ -1,22 +1,21 @@
 name: Android APK
+run-name: Télécommande universelle · ${{ github.ref_name }}
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [telecommande-universelle]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.ref }}
+  group: universal-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Compiler et publier l’APK debug
+    name: Compiler Télécommande universelle
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -41,11 +40,10 @@ jobs:
           packages: platform-tools
           log-accepted-android-sdk-licenses: 'false'
 
-      - name: Installer le SDK du projet
+      - name: Installer le SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Vérifier les fichiers Gradle
-        shell: bash
+      - name: Vérifier le wrapper Gradle
         run: |
           set -euo pipefail
           for file in gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties settings.gradle.kts build.gradle.kts gradle.properties app/build.gradle.kts; do
@@ -56,36 +54,46 @@ jobs:
       - name: Compiler, tester et analyser
         run: ./gradlew --no-daemon --console=plain assembleDebug testDebugUnitTest lintDebug
 
-      - name: Préparer et vérifier l’APK
-        shell: bash
+      - name: Vérifier l’APK installable
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/RobotPompier-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose dist/RobotPompier-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c 4 dist/RobotPompier-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk dist/TelecommandeUniverselle-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose dist/TelecommandeUniverselle-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c 4 dist/TelecommandeUniverselle-debug.apk
           cd dist
-          sha256sum RobotPompier-debug.apk > SHA256SUMS.txt
+          sha256sum TelecommandeUniverselle-debug.apk > SHA256SUMS.txt
 
-      - name: Publier l’APK téléchargeable
+      - name: Publier l’APK
         id: apk
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: RobotPompier-debug
+          name: TelecommandeUniverselle-debug
           path: |
-            dist/RobotPompier-debug.apk
+            dist/TelecommandeUniverselle-debug.apk
             dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publier les rapports et aperçus simulés
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: TelecommandeUniverselle-verifications
+          path: |
+            app/build/test-results/testDebugUnitTest/TEST-*.xml
+            app/build/reports/lint-results-debug.txt
+            app/build/reports/previews/*.png
           if-no-files-found: error
           retention-days: 30
 
       - name: Afficher le lien de téléchargement
         run: |
           cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
-          ## APK prêt à télécharger
-          [Télécharger RobotPompier-debug.zip](${{ steps.apk.outputs.artifact-url }})
+          ## Télécommande universelle — APK prêt
+          [Télécharger l’APK dans son ZIP](${{ steps.apk.outputs.artifact-url }})
 
-          Connectez-vous à GitHub, téléchargez cet artefact puis extrayez le ZIP.
-          Le fichier à installer sur Android est **RobotPompier-debug.apk**.
-          Aucun Android Studio n’est nécessaire pour télécharger ou installer l’APK.
-          L’artefact reste disponible pendant 30 jours ; relancez le workflow pour le régénérer.
+          Connectez-vous à GitHub, extrayez le ZIP puis installez **TelecommandeUniverselle-debug.apk**.
+          Cette application s’installe à côté de Robot Pompier. Aucun Android Studio n’est nécessaire.
+          Les aperçus sont issus de tests Android simulés, pas d’une connexion à un vrai robot.
+          Les artefacts sont conservés 30 jours. Pour une nouvelle exécution, sélectionnez la branche **telecommande-universelle** dans Run workflow.
           EOF
