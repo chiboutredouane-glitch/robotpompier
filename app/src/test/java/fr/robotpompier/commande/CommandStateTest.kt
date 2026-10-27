@@ -17,7 +17,7 @@ class CommandStateTest {
     @Test fun everyDirectionUsesExactAsciiPressAndRelease() {
         state.setConnected(true)
         CommandState.Direction.entries.forEach { state.press(it); state.release(it) }
-        assertEquals("AaRrDdGg", bytes.toString())
+        assertEquals("ASRSDSGS", bytes.toString())
         assertTrue(bytes.all { it.code < 128 && !it.isWhitespace() })
     }
 
@@ -28,16 +28,16 @@ class CommandStateTest {
         state.release(CommandState.Direction.FORWARD)
         assertTrue(state.pumpOn)
         state.pump(false)
-        assertEquals("AEaF", bytes.toString())
+        assertEquals("AESF", bytes.toString())
     }
 
-    @Test fun twoMovementTouchesReleaseIndependently() {
+    @Test fun eachMovementTouchReleaseSendsGlobalStop() {
         state.setConnected(true)
         state.press(CommandState.Direction.FORWARD)
         state.press(CommandState.Direction.RIGHT)
         state.release(CommandState.Direction.FORWARD)
         state.release(CommandState.Direction.RIGHT)
-        assertEquals("ADad", bytes.toString())
+        assertEquals("ADSS", bytes.toString())
     }
 
     @Test fun repeatedKeyDownAndRepeatedCancelDoNotDuplicateBytes() {
@@ -46,7 +46,7 @@ class CommandStateTest {
         state.press(CommandState.Direction.LEFT)
         state.release(CommandState.Direction.LEFT)
         state.release(CommandState.Direction.LEFT)
-        assertEquals("Gg", bytes.toString())
+        assertEquals("GS", bytes.toString())
     }
 
     @Test fun connectionLossDropsHeldStateAndBlocksLateEvents() {
@@ -71,12 +71,12 @@ class CommandStateTest {
         assertEquals("A", bytes.toString())
         state.press(CommandState.Direction.FORWARD)
         state.release(CommandState.Direction.FORWARD)
-        assertEquals("AAa", bytes.toString())
+        assertEquals("AAS", bytes.toString())
     }
 
-    @Test fun safetySequenceReleasesAllDirectionsAndPumpWithoutLineEnding() {
-        assertEquals("ardgF", CommandState.SAFE_STOP)
-        assertArrayEquals(byteArrayOf(97, 114, 100, 103, 70), CommandState.SAFE_STOP.toByteArray(Charsets.US_ASCII))
+    @Test fun safetySequenceStopsMovementAndPumpWithoutLineEnding() {
+        assertEquals("SF", CommandState.SAFE_STOP)
+        assertArrayEquals(byteArrayOf(83, 70), CommandState.SAFE_STOP.toByteArray(Charsets.US_ASCII))
     }
 
     @Test fun explicitTouchReleaseDoesNotDependOnHeldBookkeeping() {
@@ -84,7 +84,7 @@ class CommandStateTest {
         state.press(CommandState.Direction.RIGHT)
         state.clear()
         state.release(CommandState.Direction.RIGHT, touchWasActive = true)
-        assertEquals("Dd", bytes.toString())
+        assertEquals("DS", bytes.toString())
     }
 
     @Test fun explicitTouchReleaseCannotWriteAfterDisconnection() {

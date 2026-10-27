@@ -1,4 +1,4 @@
-# Vérification de la version 1.1 — 27 octobre 2026
+# Vérification de la version 1.2 — 27 octobre 2026
 
 ## Résultat
 
@@ -7,7 +7,7 @@
 - Android Lint : **No issues found.** Les choix explicites de paysage et de disposition native par poids sont documentés dans le XML et exclus de leurs avertissements de recommandation respectifs.
 - APK signé avec une clé de développement Android : vérification `apksigner verify --verbose` réussie, signatures v1 et v2 valides.
 - Alignement APK : `zipalign -c 4` réussi.
-- Manifeste compilé inspecté avec `aapt dump badging` : application `fr.robotpompier.commande`, version `1.1` (code 2), minimum API 23, cible API 35.
+- Manifeste compilé inspecté avec `aapt dump badging` : application `fr.robotpompier.commande`, version `1.2` (code 3), minimum API 23, cible API 35.
 - Tous les fichiers XML source ont été analysés sans erreur de syntaxe.
 
 Outils utilisés : Eclipse Temurin JDK 21.0.8, Gradle 8.13, Android Gradle Plugin 8.9.2, Kotlin 2.1.20, SDK Android 35 et Build Tools 35.0.0. Compilation réalisée par Gradle en ligne de commande ; le projet est prévu pour être ouvert dans Android Studio.
@@ -24,9 +24,11 @@ Le répertoire d’export absolu annoncé par la session (`/codex/browser/projec
 
 ## Limites de validation
 
-La version 1.1 renforce l’envoi de la minuscule à la fin d’un appui tactile actif : l’arrêt explicite reste envoyé même si la mémoire locale des directions maintenues a été effacée. Le nouveau test `realReleaseStillWritesStopIfLocalHeldStateWasCleared` couvre ce cas. Cela ne prouve pas que cet effacement est la cause du problème observé sur le robot de l’utilisateur.
+Le protocole a été précisé par l’utilisateur après vérification de ses blocs MIT App Inventor : chaque relâchement de direction envoie **S majuscule**, et non une minuscule. La version 1.2 corrige les quatre correspondances, le filtre des caractères autorisés et la séquence de sécurité (`SF`). Les commandes de pompe restent `E` et `F`. Aucun saut de ligne ni espace n’est ajouté.
 
-L’affichage TX confirme le retour réussi de l’écriture sur la socket, sans constituer un accusé de réception du robot. Le fonctionnement de l’ancienne application MIT App Inventor sur le même firmware a été signalé par l’utilisateur ; la cause exacte du non-arrêt avec l’application native reste à confirmer sur matériel. Voir `docs/DIAGNOSTIC_ARRET.md`.
+Les tests contrôlent les flux `AS`, `RS`, `DS`, `GS`, l’indépendance de la pompe et l’arrêt sur annulation/sortie du doigt. Le test `realReleaseStillWritesStopIfLocalHeldStateWasCleared` conserve également le contrôle de l’arrêt explicite après remise à zéro de l’état local.
+
+L’affichage attendu au relâchement est `TX : S · 0x53`. Il confirme le retour réussi de l’écriture sur la socket, sans constituer un accusé de réception du robot. L’arrêt physique avec cette version reste à vérifier sur le robot réel. Voir `docs/DIAGNOSTIC_ARRET.md`.
 
 - Aucun téléphone, émulateur Android système ni module HC-05/HC-06 connecté à cet environnement : les tests Robolectric simulent le framework Android, sans transmission radio ni arrêt physique des moteurs. Les essais réels restent à valider avec `docs/RECETTE.md`.
 - Aucun firmware du robot n’a été fourni. L’arrêt physique sur perte de liaison exige l’interverrouillage côté microcontrôleur décrit dans `docs/SECURITE.md` ; il ne peut pas être garanti par un téléphone après coupure du lien.

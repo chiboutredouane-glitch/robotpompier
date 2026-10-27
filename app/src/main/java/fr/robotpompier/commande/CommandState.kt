@@ -3,7 +3,7 @@ package fr.robotpompier.commande
 /** Protocol state independent of Android. No terminators, spaces or heartbeat bytes. */
 class CommandState(private val send: (String) -> Unit) {
     enum class Direction(val press: String, val release: String) {
-        FORWARD("A", "a"), BACKWARD("R", "r"), RIGHT("D", "d"), LEFT("G", "g")
+        FORWARD("A", "S"), BACKWARD("R", "S"), RIGHT("D", "S"), LEFT("G", "S")
     }
 
     private val held = linkedSetOf<Direction>()
@@ -40,7 +40,7 @@ class CommandState(private val send: (String) -> Unit) {
     }
 
     companion object {
-        // Every movement release plus pump off. Written once, without a line ending.
-        const val SAFE_STOP = "ardgF"
+        // Global movement stop, then pump off. No terminator or extra character.
+        const val SAFE_STOP = "SF"
     }
 }

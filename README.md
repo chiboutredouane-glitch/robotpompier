@@ -58,20 +58,20 @@ Le libellé de la pompe décrit une **commande demandée**, car le protocole ne 
 
 ## Protocole exact
 
-Si le robot continue après le relâchement, suivre [le diagnostic d’arrêt](docs/DIAGNOSTIC_ARRET.md). La version 1.1 affiche le dernier caractère écrit sur la liaison Bluetooth, avec son code hexadécimal, afin de vérifier le passage de la majuscule à la minuscule. Cet affichage n’est pas un accusé de réception du robot.
+Le protocole confirmé dans l’application MIT App Inventor utilise **`S` majuscule pour arrêter le déplacement au relâchement de chacune des quatre directions**. La version 1.2 applique ce protocole. Le dernier caractère écrit sur la liaison Bluetooth est affiché avec son code hexadécimal : au relâchement, **`TX : S · 0x53`**. Cet affichage n’est pas un accusé de réception du robot. Voir [le diagnostic d’arrêt](docs/DIAGNOSTIC_ARRET.md).
 
 | Commande | À l’appui | Au relâchement |
 | --- | --- | --- |
-| Avancer | `A` (65) | `a` (97) |
-| Reculer | `R` (82) | `r` (114) |
-| Droite | `D` (68) | `d` (100) |
-| Gauche | `G` (71) | `g` (103) |
+| Avancer | `A` (65) | `S` (83) |
+| Reculer | `R` (82) | `S` (83) |
+| Droite | `D` (68) | `S` (83) |
+| Gauche | `G` (71) | `S` (83) |
 | Activer la pompe | `E` (69), au clic | aucun |
 | Désactiver la pompe | `F` (70), au clic | aucun |
 
 Chaque caractère est envoyé en ASCII, sans espace, sans `CR`, sans `LF`. Le clic de pompe est validé au relâchement, comme un bouton Android standard. Les commandes de déplacement sont émises dès le contact tactile. Le flux est sérialisé pour préserver l’ordre de plusieurs doigts. L’UUID SPP est `00001101-0000-1000-8000-00805F9B34FB`.
 
-La séquence supplémentaire **`ardgF`** est envoyée une fois à la connexion et avant une déconnexion volontaire : relâchement de toutes les directions puis arrêt de la pompe. Le firmware doit traiter ces caractères individuellement et de manière idempotente.
+La séquence supplémentaire **`SF`** est envoyée une fois à la connexion et avant une déconnexion volontaire : arrêt global du déplacement puis arrêt de la pompe. Le firmware doit traiter ces caractères individuellement et de manière idempotente. Un relâchement de direction envoie seulement `S`, afin de laisser la pompe indépendante. Si plusieurs directions sont maintenues, le relâchement de l’une envoie cet arrêt global ; aucun mouvement n’est repris automatiquement par l’autre doigt.
 
 ## Autorisations et connexion
 

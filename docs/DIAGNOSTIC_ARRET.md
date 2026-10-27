@@ -1,40 +1,32 @@
-# Le robot continue après le relâchement
+# Arrêt au relâchement : commande S
 
-La version 1.1 renforce le relâchement : la fin d’un appui tactile actif demande explicitement la minuscule d’arrêt, même si la liste locale des directions maintenues a été effacée. Elle affiche aussi **TX** dans la ligne de connexion. Ce champ change seulement après le retour réussi de l’écriture et du `flush` de la socket Bluetooth. Il confirme une écriture côté téléphone, **pas** la réception par le microcontrôleur ni l’arrêt des moteurs.
+Le protocole réel a été confirmé par l’utilisateur dans ses blocs MIT App Inventor : **la lettre S majuscule arrête le déplacement au relâchement de chacun des quatre boutons**. Les anciennes versions natives envoyaient des minuscules conformément à la spécification initiale ; elles ne correspondaient donc pas à ce protocole.
 
-L’ancienne application MIT App Inventor ayant été signalée comme fonctionnelle avec le même robot, conserver le programme embarqué pendant la comparaison et effectuer exactement le même appui/relâchement dans les deux applications. Aucun changement du firmware n’est requis pour essayer cette version.
+La version **1.2** envoie désormais `S` pour les quatre directions. Elle applique également `S` sur annulation tactile ou sortie du doigt. La pompe reste indépendante, commandée par `E` et `F`. Aucun changement du programme embarqué n’est nécessaire pour essayer ce protocole corrigé.
 
-Faire ce test avec les roues levées. Maintenir une seule direction, puis relâcher, sans toucher un autre bouton :
+## Test avec les roues levées
+
+Maintenir une seule direction, puis relâcher sans toucher un autre bouton :
 
 | Bouton | Pendant l’appui | Après relâchement |
 | --- | --- | --- |
-| Avancer | `TX : A · 0x41` | `TX : a · 0x61` |
-| Reculer | `TX : R · 0x52` | `TX : r · 0x72` |
-| Droite | `TX : D · 0x44` | `TX : d · 0x64` |
-| Gauche | `TX : G · 0x47` | `TX : g · 0x67` |
+| Avancer | `TX : A · 0x41` | `TX : S · 0x53` |
+| Reculer | `TX : R · 0x52` | `TX : S · 0x53` |
+| Droite | `TX : D · 0x44` | `TX : S · 0x53` |
+| Gauche | `TX : G · 0x47` | `TX : S · 0x53` |
 
-- Si TX reste en majuscule après avoir levé le doigt, relever le bouton, le modèle du téléphone et ce qu’affiche le voyant. Cela indique que l’écriture de la minuscule n’a pas été constatée côté téléphone.
-- Si TX devient la bonne minuscule et que le robot continue, vérifier les octets reçus et leur traitement dans le firmware. Une écriture réussie côté téléphone ne garantit pas leur réception et leur exécution côté robot.
-- Si le voyant devient rouge, la connexion a été interrompue ; vérifier aussi l’interverrouillage embarqué décrit dans `SECURITE.md`.
+Activer ensuite la pompe pendant un appui sur Avancer, puis relâcher Avancer : le flux doit être `A`, `E`, `S` ; la pompe reste active jusqu’à la commande `F`. `S` est un arrêt global du déplacement : si deux directions sont maintenues, le relâchement de l’une arrête le mouvement sans reprendre automatiquement celui de l’autre.
 
-## Vérifications du programme embarqué
+La connexion et la déconnexion volontaire utilisent `SF` : arrêt global du déplacement puis arrêt de la pompe. Les caractères sont envoyés individuellement en ASCII, sans espace ni saut de ligne.
 
-Le protocole est sensible à la casse. Une conversion systématique en majuscules (`toupper`, `toUpperCase`, etc.) transformerait l’ordre d’arrêt en nouvel ordre de mouvement. Les minuscules `a`, `r`, `d`, `g` doivent être traitées explicitement. Les octets doivent être lus individuellement, sans attendre de saut de ligne : l’application n’en ajoute aucun.
+## Interpréter TX
 
-Vérifier que la boucle de réception ne reste pas bloquée dans un mouvement ou dans un long `delay()`. Vérifier également qu’une commande de mouvement mémorisée n’est pas réappliquée immédiatement après la minuscule d’arrêt.
+TX est mis à jour seulement après le retour réussi de l’écriture et du `flush` de la socket Bluetooth. Il confirme une écriture côté téléphone, pas la réception par le microcontrôleur ni l’arrêt effectif des moteurs.
 
-Le principe de traitement est le suivant, à adapter au câblage et au pilote de moteurs existants :
+- Si TX reste sur la lettre de déplacement après avoir levé le doigt, relever le bouton, le modèle du téléphone et l’état du voyant.
+- Si TX affiche `S · 0x53` mais que le robot continue, comparer le même appui/relâchement avec l’ancienne application et relever les octets réellement reçus, sans modifier d’abord le programme embarqué.
+- Si le voyant devient rouge, la connexion a été interrompue ; voir aussi `SECURITE.md` pour l’interverrouillage sur perte de liaison.
 
-```text
-lire un caractère c
-si c vaut A, R, D ou G : appliquer le mouvement demandé
-si c vaut a, r, d ou g : arrêter le mouvement concerné
-si c vaut E : activer la pompe
-si c vaut F : désactiver la pompe
-```
+## Tests côté Android
 
-L’arrêt des moteurs ne doit pas appeler l’arrêt de la pompe : elle reste commandée par `E` et `F`. Le programme embarqué et les broches du pilote moteur n’ayant pas été fournis, aucun correctif matériel précis n’est supposé dans cette livraison. Fournir la boucle de lecture Bluetooth et les fonctions qui commandent les moteurs pour diagnostiquer cette partie.
-
-## Vérification côté Android
-
-En plus des tests du protocole, `DirectionTouchTest` exécute les véritables listeners tactiles de `MainActivity` avec Robolectric : appui puis relâchement des quatre boutons, annulation tactile, sortie du doigt et activation de la pompe pendant un appui. Ces tests contrôlent les caractères transmis au transport, sans simuler une réception radio ni un robot réel.
+`CommandStateTest` vérifie les octets du protocole. `DirectionTouchTest` exécute les véritables listeners tactiles de `MainActivity` avec Robolectric : appui/relâchement des quatre directions, annulation, sortie du doigt, relâchement après remise à zéro de l’état local, second doigt et pompe pendant un appui. Ces tests n’utilisent aucune liaison radio et ne remplacent pas l’essai sur le robot.

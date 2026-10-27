@@ -43,13 +43,13 @@ class DirectionTouchTest {
         try { button.dispatchTouchEvent(event) } finally { event.recycle() }
     }
 
-    @Test fun liftingEachDirectionWritesItsLowercaseStop() {
+    @Test fun liftingEachDirectionWritesUppercaseS() {
         listOf(R.id.forward, R.id.backward, R.id.right, R.id.left).forEach { id ->
             val button = activity.findViewById<Button>(id)
             touch(button, MotionEvent.ACTION_DOWN)
             touch(button, MotionEvent.ACTION_UP)
         }
-        assertEquals("AaRrDdGg", written.toString())
+        assertEquals("ASRSDSGS", written.toString())
     }
 
     @Test fun cancellationWritesStopOnce() {
@@ -57,7 +57,7 @@ class DirectionTouchTest {
         touch(button, MotionEvent.ACTION_DOWN)
         touch(button, MotionEvent.ACTION_CANCEL)
         touch(button, MotionEvent.ACTION_UP)
-        assertEquals("Aa", written.toString())
+        assertEquals("AS", written.toString())
     }
 
     @Test fun realReleaseStillWritesStopIfLocalHeldStateWasCleared() {
@@ -65,7 +65,7 @@ class DirectionTouchTest {
         touch(button, MotionEvent.ACTION_DOWN)
         state.clear()
         touch(button, MotionEvent.ACTION_UP)
-        assertEquals("Aa", written.toString())
+        assertEquals("AS", written.toString())
     }
 
     @Test fun slidingOutsideStopsAndDoesNotRestartOnReentry() {
@@ -74,7 +74,7 @@ class DirectionTouchTest {
         touch(button, MotionEvent.ACTION_MOVE, -10f)
         touch(button, MotionEvent.ACTION_MOVE)
         touch(button, MotionEvent.ACTION_UP)
-        assertEquals("Gg", written.toString())
+        assertEquals("GS", written.toString())
     }
 
     @Test fun pumpDoesNotSwallowDirectionRelease() {
@@ -83,7 +83,7 @@ class DirectionTouchTest {
         activity.findViewById<Button>(R.id.pump_on).performClick()
         touch(button, MotionEvent.ACTION_UP)
         activity.findViewById<Button>(R.id.pump_off).performClick()
-        assertEquals("AEaF", written.toString())
+        assertEquals("AESF", written.toString())
     }
 
     @Test fun trackedFingerPointerUpStopsWhileAnotherFingerRemains() {
@@ -99,6 +99,6 @@ class DirectionTouchTest {
             coordinates, 0, 0, 1f, 1f, 0, 0, 0, 0)
         try { button.dispatchTouchEvent(event) } finally { event.recycle() }
         touch(button, MotionEvent.ACTION_UP)
-        assertEquals("Aa", written.toString())
+        assertEquals("AS", written.toString())
     }
 }

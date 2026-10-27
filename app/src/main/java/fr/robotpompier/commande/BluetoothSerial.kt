@@ -87,7 +87,7 @@ class BluetoothSerial(private var listener: ((State) -> Unit)?) {
     }
 
     fun send(bytes: String) {
-        require(bytes.length == 1 && bytes[0] in "AaRrDdGgEF")
+        require(bytes.length == 1 && bytes[0] in "ARDGSEF")
         val target = synchronized(lock) {
             if (closed || state.phase != Phase.CONNECTED) return
             session ?: return
