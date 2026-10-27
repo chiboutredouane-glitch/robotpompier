@@ -48,6 +48,8 @@ class MainActivity : Activity() {
     private var resumed = false
     private var destroyed = false
     private var editing = false
+    private val recentTx = ArrayDeque<String>()
+    private var lastLinkState: LinkState? = null
     private lateinit var status: TextView
     private lateinit var tx: TextView
     private lateinit var footer: TextView
@@ -113,6 +115,7 @@ class MainActivity : Activity() {
         status = Ui.text(this, "● Déconnecté", 12f, Ui.RED).apply {
             id = R.id.status; maxLines = 2; setPadding(dp(8), 0, dp(4), 0)
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            setOnClickListener { if (phase == LinkPhase.DISCONNECTED) showDiagnostics() }
         }
         connection.addView(status, Ui.weighted(height = dp(48)))
         tx = Ui.text(this, "TX : —", 12f).apply { id = R.id.tx; typeface = Typeface.MONOSPACE }
@@ -230,6 +233,19 @@ class MainActivity : Activity() {
     private fun render(state: LinkState) {
         if (destroyed) return
         if (state.phase == LinkPhase.CONNECTED && (!resumed || !hasWindowFocus())) { stopSession("Commande interrompue par sécurité."); return }
+        val previous = lastLinkState
+        if (state.phase == LinkPhase.CONNECTING && previous?.phase != LinkPhase.CONNECTING) recentTx.clear()
+        if (state.lastWritten != null && state != previous) {
+            recentTx.addLast(state.lastWritten)
+            while (recentTx.size > 20) recentTx.removeFirst()
+        }
+        if (state.phase == LinkPhase.DISCONNECTED && previous != null && previous.phase != LinkPhase.DISCONNECTED) {
+            val diagnostic = "Télécommande universelle ${getString(R.string.app_version)}\n" +
+                "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.MANUFACTURER} ${Build.MODEL}\n" +
+                "Mode : ${profile.radio}\nMotif : ${state.message}\nDerniers TX : ${recentTx.joinToString(" ").ifEmpty { "aucun" }}"
+            getSharedPreferences("connection_diagnostics", MODE_PRIVATE).edit().putString("last", diagnostic).apply()
+        }
+        lastLinkState = state
         if (phase != state.phase) engine.connection(state.phase == LinkPhase.CONNECTED)
         phase = state.phase
         status.text = getString(R.string.connection_caption, state.message)
@@ -238,13 +254,19 @@ class MainActivity : Activity() {
         connectButton.text = when (phase) { LinkPhase.CONNECTED -> "Déconnecter"; LinkPhase.CONNECTING -> "Annuler"; else -> "Connecter" }
         if (phase == LinkPhase.CONNECTED) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        footer.text = if (phase == LinkPhase.CONNECTED) "TX = écriture côté téléphone · ON/OFF = commande demandée" else "Noms et commandes personnalisables dans Réglages"
+        footer.text = if (phase == LinkPhase.CONNECTED) "TX = écriture côté téléphone · ON/OFF = commande demandée" else "Toucher l’état rouge pour consulter le diagnostic de connexion"
         refreshButtonStates()
     }
     private fun stopSession(reason: String) {
         val stop = engine.deactivate()
         link?.disconnect(stop, reason)
         render(LinkState(LinkPhase.DISCONNECTED, reason))
+    }
+    private fun showDiagnostics() {
+        val diagnostic = getSharedPreferences("connection_diagnostics", MODE_PRIVATE).getString("last", null)
+            ?: "Aucune déconnexion enregistrée. Connectez le module puis consultez cet écran après la coupure."
+        val text = Ui.text(this, diagnostic, 15f).apply { setTextIsSelectable(true); setPadding(dp(20), dp(12), dp(20), dp(12)) }
+        dialog = AlertDialog.Builder(this).setTitle("Diagnostic Bluetooth").setView(text).setPositiveButton("Fermer", null).show()
     }
     private fun disposeLink() { linkGeneration++; link?.close(); link = null }
     private fun changeRadio(mode: RadioMode) {
@@ -372,7 +394,7 @@ class MainActivity : Activity() {
     }
     override fun onPause() {
         resumed = false; stopScan(); dialog?.dismiss(); dialog = null
-        if (::engine.isInitialized) stopSession("Déconnecté en arrière-plan.")
+        if (::engine.isInitialized && phase != LinkPhase.DISCONNECTED) stopSession("Déconnecté en arrière-plan.")
         super.onPause()
     }
     @Deprecated("Native back handler")

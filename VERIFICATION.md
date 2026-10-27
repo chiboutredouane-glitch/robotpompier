@@ -1,13 +1,13 @@
-# Vérification — Télécommande universelle 1.0
+# Vérification — Télécommande universelle 1.0.1
 
 Vérifications effectuées le 27 octobre 2026 dans l’environnement de développement.
 
 - Compilation avec le wrapper fourni : **BUILD SUCCESSFUL** pour `assembleDebug testDebugUnitTest lintDebug`.
-- **46 tests réussis**, aucun échec, aucune erreur, aucun test ignoré.
+- **49 tests réussis**, aucun échec, aucune erreur, aucun test ignoré.
 - Android Lint : **No issues found.**
 - Signature APK vérifiée par `apksigner` : schémas v1 et v2 valides.
 - Alignement APK vérifié par `zipalign -c 4`.
-- Manifeste compilé inspecté : `fr.telecommande.universelle`, version 1.0/code 1, minimum API 23, cible API 35, permissions Bluetooth et BLE attendues.
+- Manifeste compilé inspecté : `fr.telecommande.universelle`, version 1.0.1/code 2, minimum API 23, cible API 35, permissions Bluetooth et BLE attendues.
 - Aperçus graphiques générés à partir des vues Android, dont une vue connectée explicitement marquée « simulation ».
 
 ## Couverture des tests
@@ -17,7 +17,8 @@ Vérifications effectuées le 27 octobre 2026 dans l’environnement de dévelop
 - 6 tests de stockage : conservation des profils et noms, dernier appareil, sélection, suppression, corruption et refus de sauvegarde invalide.
 - 4 tests de résolution de services BLE : FFE0/FFE1, WRITE, WRITE_NO_RESPONSE et refus d’une caractéristique non inscriptible.
 - 5 tests du transport BLE avec callbacks Android simulés : arrêt initial, écritures ASCII, mode sans réponse cadencé, fermeture après arrêt et annulation avec callback tardif.
-- 9 tests d’interface : boutons désactivés au départ, gestes, interrupteurs, réglages, renommage sans changement de lettres, fermeture avec désactivation des fonctions actives et **deux doigts sur la fenêtre complète** (direction maintenue pendant le clic d’un réservé).
+- 12 tests d’interface : boutons désactivés au départ, gestes, interrupteurs, réglages, renommage sans changement de lettres, fermeture avec désactivation des fonctions actives et **deux doigts sur la fenêtre complète** (direction maintenue pendant le clic d’un réservé).
+- 3 tests supplémentaires d’interface vérifient la conservation du motif et des TX après recréation, le motif de perte du focus et l’absence de dialogue pendant une liaison active (inclus dans les 12 ci-dessus).
 - 3 tests de rendu Android et de dimensions des zones tactiles en paysage.
 
 Les tests Android utilisent Robolectric, API 28 ; les tests de rendu emploient son moteur graphique natif. Java 21.0.8, Gradle 8.13, Android Gradle Plugin 8.9.2, Kotlin 2.1.20, SDK Android 35 et Build Tools 35.0.0 ont été utilisés.

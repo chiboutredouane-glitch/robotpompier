@@ -8,6 +8,7 @@ import android.view.InputDevice
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Spinner
+import android.widget.TextView
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -21,7 +22,47 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], qualifiers = "w720dp-h360dp-land-mdpi")
 class ActivityTest {
-    @Before fun clear() { RuntimeEnvironment.getApplication().getSharedPreferences("robot_profiles_v1", 0).edit().clear().commit() }
+    @Before fun clear() {
+        RuntimeEnvironment.getApplication().getSharedPreferences("robot_profiles_v1", 0).edit().clear().commit()
+        RuntimeEnvironment.getApplication().getSharedPreferences("connection_diagnostics", 0).edit().clear().commit()
+    }
+    private fun render(activity: MainActivity, state: LinkState) {
+        MainActivity::class.java.getDeclaredMethod("render", LinkState::class.java).apply { isAccessible = true }.invoke(activity, state)
+    }
+    @Test fun writeFailureAndTxRemainAvailableAfterBackgroundAndRecreation() {
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup().windowFocusChanged(true)
+        val a = c.get()
+        render(a, LinkState(LinkPhase.CONNECTING, "Connexion"))
+        render(a, LinkState(LinkPhase.CONNECTED, "Connecté", "S"))
+        render(a, LinkState(LinkPhase.CONNECTED, "Connecté", "F"))
+        render(a, LinkState(LinkPhase.DISCONNECTED, "Écriture BLE sans réponse : connexion fermée."))
+        c.pause().stop().destroy()
+        val next = Robolectric.buildActivity(MainActivity::class.java).setup()
+        val diagnostic = next.get().getSharedPreferences("connection_diagnostics", 0).getString("last", "")!!
+        assertTrue(diagnostic.contains("Écriture BLE sans réponse"))
+        assertTrue(diagnostic.contains("S F"))
+        next.get().findViewById<TextView>(R.id.status).performClick()
+        assertEquals("Diagnostic Bluetooth", shadowOf(org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog()).title.toString())
+        next.pause().stop().destroy()
+    }
+    @Test fun focusSafetyReasonIsRecordedWithoutBeingReplacedByOnPause() {
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup().windowFocusChanged(true)
+        render(c.get(), LinkState(LinkPhase.CONNECTING, "Connexion"))
+        render(c.get(), LinkState(LinkPhase.CONNECTED, "Connecté", "S"))
+        c.windowFocusChanged(false).pause()
+        assertTrue(c.get().getSharedPreferences("connection_diagnostics", 0).getString("last", "")!!.contains("Commande interrompue par sécurité."))
+        assertTrue(c.get().findViewById<TextView>(R.id.status).text.contains("Commande interrompue"))
+        c.stop().destroy()
+    }
+    @Test fun touchingConnectedStatusDoesNotOpenDialogOrDisconnect() {
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup().windowFocusChanged(true)
+        render(c.get(), LinkState(LinkPhase.CONNECTING, "Connexion"))
+        render(c.get(), LinkState(LinkPhase.CONNECTED, "Connecté", "S"))
+        c.get().findViewById<TextView>(R.id.status).performClick()
+        assertTrue(c.get().findViewById<Button>(R.id.forward).isEnabled)
+        assertEquals("Connecté", c.get().findViewById<TextView>(R.id.status).text.toString().removePrefix("● "))
+        c.pause().stop().destroy()
+    }
     private fun touch(button: Button, action: Int, x: Float = 30f) {
         val now = SystemClock.uptimeMillis()
         val event = MotionEvent.obtain(now, now, action, x, 20f, 0)

@@ -30,6 +30,7 @@ Commencer avec les roues levées ou des LED de test. Utiliser le profil correspo
 | UUID personnalisés | Découverte de ceux réellement enregistrés dans le profil |
 | Annuler pendant la connexion | Aucune activation tardive des boutons |
 | Éteindre le module ou le Bluetooth | Retour au rouge après détection, aucune reconnexion ni reprise automatique |
+| Coupure puis appui sur l’état rouge | Motif initial, mode, version Android et derniers TX consultables ; conservés après réouverture |
 | Bouton Accueil, verrouillage, changement d’application | Tentative d’arrêt puis déconnexion ; reconnexion manuelle nécessaire |
 | Rotation paysage dans les deux sens | Interface accessible ; recréation de l’activité ferme le lien par sécurité |
 
