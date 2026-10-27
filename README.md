@@ -58,6 +58,8 @@ Le libellé de la pompe décrit une **commande demandée**, car le protocole ne 
 
 ## Protocole exact
 
+Si le robot continue après le relâchement, suivre [le diagnostic d’arrêt](docs/DIAGNOSTIC_ARRET.md). La version 1.1 affiche le dernier caractère écrit sur la liaison Bluetooth, avec son code hexadécimal, afin de vérifier le passage de la majuscule à la minuscule. Cet affichage n’est pas un accusé de réception du robot.
+
 | Commande | À l’appui | Au relâchement |
 | --- | --- | --- |
 | Avancer | `A` (65) | `a` (97) |

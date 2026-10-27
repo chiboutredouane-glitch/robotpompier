@@ -95,7 +95,7 @@ class MainActivity : Activity() {
         val button = findViewById<Button>(id)
         var pointer = -1
         fun release() {
-            commands.release(direction)
+            commands.release(direction, touchWasActive = pointer != -1)
             pointer = -1
             button.isPressed = false
         }
@@ -207,6 +207,14 @@ class MainActivity : Activity() {
             shape = GradientDrawable.OVAL; setColor(color)
         }
         findViewById<TextView>(R.id.status).apply { text = state.message; setTextColor(color) }
+        findViewById<TextView>(R.id.last_command).text = when (val written = state.lastWritten) {
+            null -> getString(R.string.no_transmission)
+            else -> {
+                if (written.length == 1) getString(R.string.transmission_byte, written,
+                    written[0].code.toString(16).uppercase().padStart(2, '0'))
+                else getString(R.string.transmission_sequence, written)
+            }
+        }
         commandButtons.forEach { it.isEnabled = connected; it.alpha = if (connected) 1f else 0.5f; if (!connected) it.isPressed = false }
         findViewById<Button>(R.id.bluetooth).text = when (state.phase) {
             BluetoothSerial.Phase.CONNECTED -> "Déconnecter"

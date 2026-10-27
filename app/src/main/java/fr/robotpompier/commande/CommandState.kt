@@ -22,8 +22,10 @@ class CommandState(private val send: (String) -> Unit) {
         if (enabled && held.add(direction)) send(direction.press)
     }
 
-    fun release(direction: Direction) {
-        if (held.remove(direction) && enabled) send(direction.release)
+    fun release(direction: Direction, touchWasActive: Boolean = false) {
+        val wasHeld = held.remove(direction)
+        // A real touch release is an explicit stop, even if local state was reset.
+        if (enabled && (wasHeld || touchWasActive)) send(direction.release)
     }
 
     fun pump(on: Boolean) {

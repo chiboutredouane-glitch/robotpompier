@@ -10,8 +10,8 @@ android {
         applicationId = "fr.robotpompier.commande"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
         testInstrumentationRunner = "android.test.InstrumentationTestRunner"
     }
     compileOptions {
@@ -20,6 +20,10 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildTypes { release { isMinifyEnabled = false } }
+    testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
-dependencies { testImplementation("junit:junit:4.13.2") }
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+}

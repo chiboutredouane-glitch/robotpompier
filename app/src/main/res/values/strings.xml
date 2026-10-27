@@ -14,6 +14,9 @@
     <string name="pump_on">Activer la pompe</string>
     <string name="pump_off">Désactiver la pompe</string>
     <string name="pump_unknown">Pompe : état inconnu</string>
+    <string name="no_transmission">TX : —</string>
+    <string name="transmission_byte">TX : %1$s · 0x%2$s</string>
+    <string name="transmission_sequence">TX : %1$s</string>
     <string name="hold">Maintenir pour déplacer</string>
     <string name="hint">Connectez un appareil déjà appairé pour commencer.</string>
 </resources>

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 @SuppressLint("MissingPermission") // MainActivity obtains CONNECT before calling Bluetooth APIs.
 class BluetoothSerial(private var listener: ((State) -> Unit)?) {
     enum class Phase { DISCONNECTED, CONNECTING, CONNECTED }
-    data class State(val phase: Phase, val message: String)
+    data class State(val phase: Phase, val message: String, val lastWritten: String? = null)
     private class Session(val socket: BluetoothSocket, val name: String)
 
     private val lock = Any()
@@ -63,7 +63,7 @@ class BluetoothSerial(private var listener: ((State) -> Unit)?) {
                 val connected = synchronized(lock) {
                     if (generation != token || session !== candidate || closed) false
                     else {
-                        state = State(Phase.CONNECTED, "Connecté à ${candidate.name}")
+                        state = State(Phase.CONNECTED, "Connecté à ${candidate.name}", CommandState.SAFE_STOP)
                         true
                     }
                 }
@@ -101,6 +101,11 @@ class BluetoothSerial(private var listener: ((State) -> Unit)?) {
             try {
                 target.socket.outputStream.write(bytes.toByteArray(Charsets.US_ASCII))
                 target.socket.outputStream.flush()
+                val report = synchronized(lock) {
+                    if (session !== target || state.phase != Phase.CONNECTED) false
+                    else { state = state.copy(lastWritten = bytes); true }
+                }
+                if (report) notifyState()
             } catch (_: IOException) {
                 fail(target, "Connexion perdue pendant la commande.")
             } catch (_: SecurityException) {

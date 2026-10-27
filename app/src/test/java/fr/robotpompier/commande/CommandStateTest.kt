@@ -78,4 +78,20 @@ class CommandStateTest {
         assertEquals("ardgF", CommandState.SAFE_STOP)
         assertArrayEquals(byteArrayOf(97, 114, 100, 103, 70), CommandState.SAFE_STOP.toByteArray(Charsets.US_ASCII))
     }
+
+    @Test fun explicitTouchReleaseDoesNotDependOnHeldBookkeeping() {
+        state.setConnected(true)
+        state.press(CommandState.Direction.RIGHT)
+        state.clear()
+        state.release(CommandState.Direction.RIGHT, touchWasActive = true)
+        assertEquals("Dd", bytes.toString())
+    }
+
+    @Test fun explicitTouchReleaseCannotWriteAfterDisconnection() {
+        state.setConnected(true)
+        state.press(CommandState.Direction.FORWARD)
+        state.setConnected(false)
+        state.release(CommandState.Direction.FORWARD, touchWasActive = true)
+        assertEquals("A", bytes.toString())
+    }
 }
