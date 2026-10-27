@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -12,7 +13,9 @@ import java.util.concurrent.TimeUnit
 
 @SuppressLint("MissingPermission")
 class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
-    private class Session(val socket: BluetoothSocket, val name: String)
+    private class Session(val socket: BluetoothSocket, val name: String) {
+        val started = SystemClock.elapsedRealtime()
+    }
     private val lock = Any()
     private val main = Handler(Looper.getMainLooper())
     private val workers = Executors.newCachedThreadPool()
@@ -37,6 +40,7 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
         val deadline = timers.schedule({ failConnecting(token, "Délai de connexion dépassé.") }, 12, TimeUnit.SECONDS)
         workers.execute {
             var candidate: Session? = null
+            var stage = "création SPP"
             try {
                 val name = device.name ?: device.address
                 val socket = device.createRfcommSocketToServiceRecord(SPP)
@@ -46,7 +50,9 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
                     if (closed || generation != token) false else { current = target; true }
                 }
                 if (!accepted) { closeSocket(target); return@execute }
+                stage = "connexion SPP"
                 socket.connect()
+                stage = "arrêt initial"
                 socket.outputStream.write(byteArrayOf(initialStop.code.toByte()))
                 socket.outputStream.flush()
                 val ready = synchronized(lock) {
@@ -56,12 +62,13 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
                 }
                 if (!ready) { closeSocket(target); return@execute }
                 deadline.cancel(false); report()
+                stage = "lecture SPP"
                 val buffer = ByteArray(256)
                 while (socket.inputStream.read(buffer) != -1) { /* no response protocol required */ }
-                fail(target, "Liaison Bluetooth perdue.")
-            } catch (_: IOException) {
-                candidate?.let { fail(it, "Appareil indisponible ou liaison interrompue.") }
-                    ?: failConnecting(token, "Impossible de créer la connexion SPP.")
+                fail(target, "Liaison Classic fermée par la pile Bluetooth (fin du flux SPP).")
+            } catch (e: IOException) {
+                candidate?.let { fail(it, ioFailure(it, stage, e)) }
+                    ?: failConnecting(token, "Impossible de créer la connexion SPP : ${errorDetail(e)}")
             } catch (_: SecurityException) {
                 candidate?.let { fail(it, "Autorisation Bluetooth retirée.") }
                     ?: failConnecting(token, "Autorisation Bluetooth requise.")
@@ -85,7 +92,7 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
                     if (current === target) state = state.copy(lastWritten = command.toString())
                 }
                 report()
-            } catch (_: IOException) { fail(target, "Échec d’envoi Bluetooth.") }
+            } catch (e: IOException) { fail(target, ioFailure(target, "envoi de $command", e)) }
             catch (_: SecurityException) { fail(target, "Autorisation Bluetooth retirée.") }
             finally { deadline.cancel(false) }
         }
@@ -118,6 +125,11 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
             current.also { current = null; state = LinkState(LinkPhase.DISCONNECTED, reason) }
         }
         report(); old?.let(::closeSocket)
+    }
+    private fun errorDetail(e: IOException) = e.message?.replace(Regex("[\\r\\n]+"), " ")?.take(180) ?: "IOException sans détail Android"
+    private fun ioFailure(target: Session, stage: String, e: IOException): String {
+        val seconds = (SystemClock.elapsedRealtime() - target.started) / 1000
+        return "Erreur Classic · $stage · après ${seconds}s : ${errorDetail(e)}"
     }
     private fun fail(target: Session, reason: String) {
         synchronized(lock) {

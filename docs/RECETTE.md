@@ -5,6 +5,7 @@ Commencer avec les roues levées ou des LED de test. Utiliser le profil correspo
 | Essai | Résultat attendu |
 | --- | --- |
 | Premier lancement | Hum-Bot, Classic, huit boutons désactivés, TX vide |
+| Recherche Classic Android déjà en cours puis connexion | Recherche annulée avant ouverture RFCOMM ; autorisation Appareils à proximité demandée sur Android 12+ |
 | Connexion HC-05/HC-06 appairé | Arrêt initial `S`, voyant vert, commandes actives |
 | Appui/relâchement des directions | `AS`, `RS`, `GS`, `DS`, sans espace ni saut de ligne |
 | Annulation tactile ou sortie du doigt | `S`, sans redémarrage automatique |
@@ -14,7 +15,7 @@ Commencer avec les roues levées ou des LED de test. Utiliser le profil correspo
 | Maintenir Avancer puis cliquer Phares d’un autre doigt | `A`, `F`, puis `S` seulement au relâchement de la direction ; phares indépendants |
 | Fermer avec Phares ON | Tentative `S`, puis `f`, puis fermeture de la liaison |
 | Ouvrir Réglages pendant un mouvement | Tentative d’arrêt et déconnexion ; aucun envoi depuis les champs de réglage |
-| Renommer les quatre réservés | Les noms persistent et les lettres restent inchangées |
+| Renommer les quatre fonctions | Les noms persistent, aucun sous-titre automatique Réservé 1…4 et les lettres restent inchangées |
 | Affecter `q/Q` à un bouton | Casse exacte, sans conversion automatique |
 | Champ de commande vide | Aucun octet pour cet événement |
 | Saisir espace, accent ou saut de ligne comme commande | Réglage refusé ; ancien profil conservé |
@@ -30,6 +31,7 @@ Commencer avec les roues levées ou des LED de test. Utiliser le profil correspo
 | UUID personnalisés | Découverte de ceux réellement enregistrés dans le profil |
 | Annuler pendant la connexion | Aucune activation tardive des boutons |
 | Éteindre le module ou le Bluetooth | Retour au rouge après détection, aucune reconnexion ni reprise automatique |
+| Erreur Classic en connexion/lecture/envoi | Diagnostic précisant opération, durée et détail Android ; relever le modèle du module et son voyant |
 | Coupure puis appui sur l’état rouge | Motif initial, mode, version Android et derniers TX consultables ; conservés après réouverture |
 | Bouton Accueil, verrouillage, changement d’application | Tentative d’arrêt puis déconnexion ; reconnexion manuelle nécessaire |
 | Rotation paysage dans les deux sens | Interface accessible ; recréation de l’activité ferme le lien par sécurité |

@@ -11,6 +11,8 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -34,6 +36,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.Spinner
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import fr.telecommande.universelle.Ui.dp
@@ -136,7 +139,7 @@ class MainActivity : Activity() {
         body.addView(directions, Ui.weighted())
         body.addView(Ui.gap(this, 10))
         val reserved = Ui.panel(this)
-        reserved.addView(Ui.text(this, "BOUTONS RÉSERVÉS", 12f, Ui.MUTED), LinearLayout.LayoutParams(-1, dp(22)))
+        reserved.addView(Ui.text(this, "FONCTIONS", 12f, Ui.MUTED), LinearLayout.LayoutParams(-1, dp(22)))
         repeat(2) { row ->
             val cells = Ui.row(this)
             repeat(2) { col ->
@@ -223,7 +226,7 @@ class MainActivity : Activity() {
                 alpha = if (isEnabled) 1f else .75f
                 if (index >= 4) {
                     val value = when (engine.requestedState(b.id)) { true -> "ON demandé"; false -> "OFF demandé"; null -> "—" }
-                    text = getString(R.string.reserved_caption, b.label, index - 3, value)
+                    text = getString(R.string.reserved_caption, b.label, value)
                     Ui.paint(this, selected = engine.requestedState(b.id) == true)
                 }
                 if (!isEnabled) isPressed = false
@@ -266,7 +269,12 @@ class MainActivity : Activity() {
         val diagnostic = getSharedPreferences("connection_diagnostics", MODE_PRIVATE).getString("last", null)
             ?: "Aucune déconnexion enregistrée. Connectez le module puis consultez cet écran après la coupure."
         val text = Ui.text(this, diagnostic, 15f).apply { setTextIsSelectable(true); setPadding(dp(20), dp(12), dp(20), dp(12)) }
-        dialog = AlertDialog.Builder(this).setTitle("Diagnostic Bluetooth").setView(text).setPositiveButton("Fermer", null).show()
+        val scroll = ScrollView(this).apply { addView(text) }
+        dialog = AlertDialog.Builder(this).setTitle("Diagnostic Bluetooth").setView(scroll)
+            .setNeutralButton("Copier") { _, _ ->
+                (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("Diagnostic Bluetooth", diagnostic))
+                Toast.makeText(this, "Diagnostic copié", Toast.LENGTH_SHORT).show()
+            }.setPositiveButton("Fermer", null).show()
     }
     private fun disposeLink() { linkGeneration++; link?.close(); link = null }
     private fun changeRadio(mode: RadioMode) {
@@ -281,8 +289,8 @@ class MainActivity : Activity() {
     }
 
     private fun neededPermissions(): Array<String> = when {
-        Build.VERSION.SDK_INT >= 31 && profile.radio == RadioMode.BLE -> arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
-        Build.VERSION.SDK_INT >= 31 -> arrayOf(Manifest.permission.BLUETOOTH_CONNECT)
+        // SCAN also permits cancelDiscovery() before a Classic RFCOMM connection.
+        Build.VERSION.SDK_INT >= 31 -> arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
         profile.radio == RadioMode.BLE -> arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
         else -> emptyArray()
     }
@@ -362,6 +370,7 @@ class MainActivity : Activity() {
         if (!resumed) return
         try {
             disposeLink()
+            if (profile.radio == RadioMode.CLASSIC) radio?.cancelDiscovery()
             profile = profile.copy(address = device.address, deviceName = device.name ?: "")
             store.save(profile)
             val token = linkGeneration

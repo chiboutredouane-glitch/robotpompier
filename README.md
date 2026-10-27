@@ -2,7 +2,7 @@
 
 Télécommande native pour **Bluetooth Classic SPP (HC-05/HC-06)** et **Bluetooth BLE série (profil MLT-BT05 FFE0/FFE1, modifiable)**. Huit boutons configurables, profils de robots mémorisés, mode paysage et affichage TX. Android 6.0/API 23 minimum, cible Android 15/API 35.
 
-Application distincte de Robot Pompier : identifiant `fr.telecommande.universelle`, nom **Télécommande universelle**, version **1.0.1**. Elle peut être installée en même temps que Robot Pompier. Les sources de cette application sont sur la branche **telecommande-universelle** ; la branche **main** conserve Robot Pompier.
+Application distincte de Robot Pompier : identifiant `fr.telecommande.universelle`, nom **Télécommande universelle**, version **1.0.2**. Elle peut être installée en même temps que Robot Pompier. Les sources de cette application sont sur la branche **telecommande-universelle** ; la branche **main** conserve Robot Pompier.
 
 ## Télécharger sans Android Studio
 
@@ -70,15 +70,23 @@ Une caractéristique sans propriété **WRITE** ou **WRITE_NO_RESPONSE** est ref
 
 ## Autorisations Android
 
-- Android 12+ : **Appareils à proximité**, avec `BLUETOOTH_CONNECT` et, pour la recherche BLE, `BLUETOOTH_SCAN` déclaré sans usage de localisation.
+- Android 12+ : **Appareils à proximité**, avec `BLUETOOTH_CONNECT` et `BLUETOOTH_SCAN`, déclaré sans usage de localisation. SCAN sert à la recherche BLE et à annuler une recherche concurrente avant une connexion Classic.
 - Android 6 à 11 : la recherche BLE exige l’autorisation de localisation et l’activation du service de localisation du téléphone. L’application ne lit ni ne collecte la position ; ce contrôle est imposé par Android pour la recherche BLE.
 - Le Bluetooth désactivé provoque une demande système d’activation. L’application ne modifie pas silencieusement l’état du Bluetooth.
 
+## Version 1.0.2
+
+Les quatre boutons de fonctions affichent leur nom personnalisé et leur état demandé, sans la ligne automatique « Réservé 1…4 ». Les noms enregistrés, modes et lettres restent inchangés.
+
+Avant une connexion Classic, l’application annule la découverte Bluetooth Android pour éviter une recherche concurrente à la liaison RFCOMM. Sur Android 12+, l’autorisation SCAN est aussi demandée en Classic : elle est nécessaire pour cette annulation et fait partie des Appareils à proximité. Aucune recherche Classic n’est lancée par l’application.
+
+Les erreurs Classic précisent désormais l’opération concernée (connexion, arrêt initial, lecture ou envoi), la durée depuis la tentative et le détail IOException fourni par Android. La fin du flux SPP est distinguée d’une erreur. Aucun acquittement du robot ni caractère supplémentaire n’est exigé. La cause de la coupure observée sur le téléphone reste à confirmer ; l’erreur générale de la version précédente ne permettait pas de l’identifier.
+
 ## Identifier une déconnexion
 
-La version **1.0.1** ajoute un diagnostic local, accessible en touchant **l’état rouge** après la coupure. Il conserve le motif exact, le mode Classic/BLE, la version Android et jusqu’à vingt dernières valeurs TX affichées de la session (valeurs successives identiques regroupées). Le diagnostic reste disponible après fermeture et réouverture ; la mise en arrière-plan ne remplace plus le message initial de panne. Aucun diagnostic n’est envoyé sur Internet. Le dialogue est accessible uniquement à l’arrêt pour ne pas interrompre une liaison active.
+Depuis la version **1.0.1**, un diagnostic local est accessible en touchant **l’état rouge** après la coupure. Il conserve le motif exact, le mode Classic/BLE, la version Android et jusqu’à vingt dernières valeurs TX affichées de la session (valeurs successives identiques regroupées). Le diagnostic reste disponible après fermeture et réouverture ; la mise en arrière-plan ne remplace plus le message initial de panne. Aucun diagnostic n’est envoyé sur Internet. Depuis la version 1.0.2, le dialogue défile si nécessaire et propose **Copier** pour relever le texte exact. Il est accessible uniquement à l’arrêt pour ne pas interrompre une liaison active.
 
-Cette version aide à distinguer une perte radio, une erreur/délai GATT et une interruption de sécurité par perte du focus. Elle ne prétend pas corriger une panne radio non reproduite. Les commandes, les délais et les règles de sécurité sont conservés. Après une coupure, relever le texte du diagnostic et le modèle du module pour cibler la correction.
+Le diagnostic aide à distinguer une perte radio, une erreur/délai GATT et une interruption de sécurité par perte du focus. Cette version ne prétend pas corriger une panne radio non reproduite. Les commandes, les délais et les règles de sécurité sont conservés. Après une coupure, relever le texte du diagnostic et le modèle du module pour cibler la correction.
 
 ## TX, états et arrêt de sécurité
 
