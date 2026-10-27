@@ -2,7 +2,7 @@
 
 Télécommande native pour **Bluetooth Classic SPP (HC-05/HC-06)** et **Bluetooth BLE série (profil MLT-BT05 FFE0/FFE1, modifiable)**. Huit boutons configurables, profils de robots mémorisés, mode paysage et affichage TX. Android 6.0/API 23 minimum, cible Android 15/API 35.
 
-Application distincte de Robot Pompier : identifiant `fr.telecommande.universelle`, nom **Télécommande universelle**, version **1.0.2**. Elle peut être installée en même temps que Robot Pompier. Les sources de cette application sont sur la branche **telecommande-universelle** ; la branche **main** conserve Robot Pompier.
+Application distincte de Robot Pompier : identifiant `fr.telecommande.universelle`, nom **Télécommande universelle**, version **1.0.3**. Elle peut être installée en même temps que Robot Pompier. Les sources de cette application sont sur la branche **telecommande-universelle** ; la branche **main** conserve Robot Pompier.
 
 ## Télécharger sans Android Studio
 
@@ -73,6 +73,16 @@ Une caractéristique sans propriété **WRITE** ou **WRITE_NO_RESPONSE** est ref
 - Android 12+ : **Appareils à proximité**, avec `BLUETOOTH_CONNECT` et `BLUETOOTH_SCAN`, déclaré sans usage de localisation. SCAN sert à la recherche BLE et à annuler une recherche concurrente avant une connexion Classic.
 - Android 6 à 11 : la recherche BLE exige l’autorisation de localisation et l’activation du service de localisation du téléphone. L’application ne lit ni ne collecte la position ; ce contrôle est imposé par Android pour la recherche BLE.
 - Le Bluetooth désactivé provoque une demande système d’activation. L’application ne modifie pas silencieusement l’état du Bluetooth.
+
+## Version 1.0.3 — connexion Classic sans réception
+
+Le projet MIT fourni appelle Connect et SendText, sans ReceiveText ni autre méthode de réception. Son client Classic crée les flux à la connexion mais n’effectue pas de lecture en attente dans cette configuration. La version 1.0.3 retire donc la lecture SPP permanente de la télécommande, qui n’a aucun protocole RX. La connexion conserve l’UUID SPP et le mode sécurisé par défaut de MIT.
+
+La perte de liaison est surveillée avec les événements système protégés **ACTION_ACL_DISCONNECTED** et **ACTION_ACL_DISCONNECT_REQUESTED**, pour l’adresse de l’appareil sélectionné uniquement. Une déconnexion d’un autre appareil ne ferme pas la session. Les erreurs d’envoi, délais d’écriture et règles d’arrêt restent actifs. Le récepteur est désinscrit à la fermeture. Aucun heartbeat, répétition de commande ou reconnexion automatique n’est ajouté. Le `S` initial de sécurité est conservé.
+
+Cette adaptation cible la différence constatée avec MIT et l’erreur de lecture après environ 25 secondes signalée sur le téléphone. La suppression de l’opération de lecture est vérifiée en test, mais la disparition de la coupure et le contrôle effectif des LED après une minute doivent encore être vérifiés avec le module réel. Le voyant Android n’est pas une preuve de réception par le robot : vérifier aussi l’action physique après l’attente et le retour au rouge lorsque le module est éteint.
+
+Comparaison effectuée avec les [sources BluetoothClient MIT](https://github.com/mit-cml/appinventor-sources/blob/master/appinventor/components/src/com/google/appinventor/components/runtime/BluetoothClient.java) et [BluetoothConnectionBase MIT](https://github.com/mit-cml/appinventor-sources/blob/master/appinventor/components/src/com/google/appinventor/components/runtime/BluetoothConnectionBase.java), ainsi qu’avec les blocs du fichier AIA fourni. Le projet SB2 indépendant reste exclu.
 
 ## Version 1.0.2
 

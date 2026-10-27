@@ -375,7 +375,7 @@ class MainActivity : Activity() {
             store.save(profile)
             val token = linkGeneration
             val listener: (LinkState) -> Unit = { if (token == linkGeneration && !destroyed) render(it) }
-            link = if (profile.radio == RadioMode.CLASSIC) ClassicLink(listener) else BleLink(this, profile, listener)
+            link = if (profile.radio == RadioMode.CLASSIC) ClassicLink(this, listener) else BleLink(this, profile, listener)
             render(LinkState(LinkPhase.CONNECTING, "Connexion en cours…"))
             link?.connect(device, profile.safety.single())
         } catch (_: SecurityException) { stopSession("Autorisation Bluetooth retirée.") }

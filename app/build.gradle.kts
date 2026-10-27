@@ -9,9 +9,9 @@ android {
         applicationId = "fr.telecommande.universelle"
         minSdk = 23
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
-        resValue("string", "app_version", "1.0.2")
+        versionCode = 4
+        versionName = "1.0.3"
+        resValue("string", "app_version", "1.0.3")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

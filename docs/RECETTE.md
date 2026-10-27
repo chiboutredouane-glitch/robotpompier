@@ -6,6 +6,7 @@ Commencer avec les roues levées ou des LED de test. Utiliser le profil correspo
 | --- | --- |
 | Premier lancement | Hum-Bot, Classic, huit boutons désactivés, TX vide |
 | Recherche Classic Android déjà en cours puis connexion | Recherche annulée avant ouverture RFCOMM ; autorisation Appareils à proximité demandée sur Android 12+ |
+| Connexion Classic, attente sans appui pendant au moins une minute puis commande LED | Liaison toujours utilisable : vérifier l’action réelle de la LED, pas seulement le voyant vert |
 | Connexion HC-05/HC-06 appairé | Arrêt initial `S`, voyant vert, commandes actives |
 | Appui/relâchement des directions | `AS`, `RS`, `GS`, `DS`, sans espace ni saut de ligne |
 | Annulation tactile ou sortie du doigt | `S`, sans redémarrage automatique |
@@ -31,7 +32,9 @@ Commencer avec les roues levées ou des LED de test. Utiliser le profil correspo
 | UUID personnalisés | Découverte de ceux réellement enregistrés dans le profil |
 | Annuler pendant la connexion | Aucune activation tardive des boutons |
 | Éteindre le module ou le Bluetooth | Retour au rouge après détection, aucune reconnexion ni reprise automatique |
-| Erreur Classic en connexion/lecture/envoi | Diagnostic précisant opération, durée et détail Android ; relever le modèle du module et son voyant |
+| Erreur Classic en connexion/envoi | Diagnostic précisant opération, durée et détail Android ; relever le modèle du module et son voyant |
+| Extinction du module sans toucher de bouton | Déconnexion ACL signalée par Android, état rouge et huit commandes désactivées après détection système |
+| Déconnexion d’un autre périphérique Bluetooth | Le robot sélectionné reste connecté |
 | Coupure puis appui sur l’état rouge | Motif initial, mode, version Android et derniers TX consultables ; conservés après réouverture |
 | Bouton Accueil, verrouillage, changement d’application | Tentative d’arrêt puis déconnexion ; reconnexion manuelle nécessaire |
 | Rotation paysage dans les deux sens | Interface accessible ; recréation de l’activité ferme le lien par sécurité |

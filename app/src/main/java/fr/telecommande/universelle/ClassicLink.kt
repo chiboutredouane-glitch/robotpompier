@@ -3,6 +3,11 @@ package fr.telecommande.universelle
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -12,8 +17,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @SuppressLint("MissingPermission")
-class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
-    private class Session(val socket: BluetoothSocket, val name: String) {
+class ClassicLink(context: Context, private var listener: ((LinkState) -> Unit)?) : RobotLink {
+    private class Session(val socket: BluetoothSocket, val name: String, val address: String) {
         val started = SystemClock.elapsedRealtime()
     }
     private val lock = Any()
@@ -25,6 +30,30 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
     private var generation = 0L
     private var closed = false
     private var state = LinkState(LinkPhase.DISCONNECTED, "Déconnecté")
+    private val appContext = context.applicationContext
+    private val disconnectReceiver = object : BroadcastReceiver() {
+        @Suppress("DEPRECATION")
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != BluetoothDevice.ACTION_ACL_DISCONNECTED &&
+                intent.action != BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED) return
+            val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= 33)
+                intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+            else intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+            val address = device?.address ?: return
+            val target = synchronized(lock) {
+                current?.takeIf { !closed && state.phase == LinkPhase.CONNECTED && it.address == address }
+            } ?: return
+            fail(target, "Liaison Classic interrompue : déconnexion signalée par Android (ACL).")
+        }
+    }
+    init {
+        val filter = IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED).apply {
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
+        }
+        // Bluetooth stack broadcasts may originate outside the system UID. Both actions are protected.
+        if (Build.VERSION.SDK_INT >= 33) appContext.registerReceiver(disconnectReceiver, filter, Context.RECEIVER_EXPORTED)
+        else appContext.registerReceiver(disconnectReceiver, filter)
+    }
     private fun report() { main.post { listener?.invoke(synchronized(lock) { state }) } }
     private fun closeSocket(s: Session) { try { s.socket.close() } catch (_: IOException) { } }
 
@@ -44,7 +73,7 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
             try {
                 val name = device.name ?: device.address
                 val socket = device.createRfcommSocketToServiceRecord(SPP)
-                val target = Session(socket, name)
+                val target = Session(socket, name, device.address)
                 candidate = target
                 val accepted = synchronized(lock) {
                     if (closed || generation != token) false else { current = target; true }
@@ -62,10 +91,9 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
                 }
                 if (!ready) { closeSocket(target); return@execute }
                 deadline.cancel(false); report()
-                stage = "lecture SPP"
-                val buffer = ByteArray(256)
-                while (socket.inputStream.read(buffer) != -1) { /* no response protocol required */ }
-                fail(target, "Liaison Classic fermée par la pile Bluetooth (fin du flux SPP).")
+                // This controller has no RX protocol. Like the supplied MIT project, it does not
+                // keep a blocking read pending on a silent module. Android ACL events and write
+                // errors detect loss instead; no heartbeat or repeated command is introduced.
             } catch (e: IOException) {
                 candidate?.let { fail(it, ioFailure(it, stage, e)) }
                     ?: failConnecting(token, "Impossible de créer la connexion SPP : ${errorDetail(e)}")
@@ -139,8 +167,10 @@ class ClassicLink(private var listener: ((LinkState) -> Unit)?) : RobotLink {
         report(); closeSocket(target)
     }
     override fun close() {
+        if (synchronized(lock) { closed }) return
         disconnect(emptyList(), "Déconnecté")
         synchronized(lock) { closed = true }
+        appContext.unregisterReceiver(disconnectReceiver)
         listener = null; writer.shutdown(); workers.shutdown(); timers.shutdown()
     }
     companion object { val SPP: UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb") }
