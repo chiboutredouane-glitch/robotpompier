@@ -4,6 +4,7 @@ on:
     branches: [maison-connectee-v1]
     paths:
       - Maison-connectee.apk
+      - Fiche-commandes-Maison-connectee.png
       - .github/workflows/publier-maison-connectee.yml
 permissions:
   contents: write
@@ -23,4 +24,4 @@ jobs:
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --title 'Maison connectée 1.1 — Android' --notes-file NOTES.md --latest=false
           fi
-          gh release upload "$RELEASE_TAG" Maison-connectee.apk --clobber
+          gh release upload "$RELEASE_TAG" Maison-connectee.apk Fiche-commandes-Maison-connectee.png --clobber
