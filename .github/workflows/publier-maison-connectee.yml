@@ -1,0 +1,26 @@
+name: Publier APK Maison connectee
+on:
+  push:
+    branches: [maison-connectee-v1]
+    paths:
+      - Maison-connectee.apk
+      - .github/workflows/publier-maison-connectee.yml
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifier le fichier APK
+        run: echo '7ec171063e08dd9f9f7ccd4a10bf1370a17542d814faea6049cd4f5e4b521f2f  Maison-connectee.apk' | sha256sum --check
+      - name: Publier le telechargement
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: maison-connectee-v1.0
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" --title 'Maison connectée 1.0 — Android' --notes-file NOTES.md --latest=false
+          fi
+          gh release upload "$RELEASE_TAG" Maison-connectee.apk --clobber
