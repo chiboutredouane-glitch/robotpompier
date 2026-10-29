@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   ios:
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
       - name: Récupérer les sources
@@ -39,7 +39,7 @@ jobs:
           print('IOS_SIMULATOR_ID='+devices[0]['udid'])
           PY
       - name: Démarrer le simulateur iPhone
-        timeout-minutes: 5
+        timeout-minutes: 8
         run: xcrun simctl bootstatus "$IOS_SIMULATOR_ID" -b
       - name: Compiler et tester l’interface iOS
         timeout-minutes: 10
