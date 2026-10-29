@@ -37,7 +37,7 @@ def configs(name,settings):
  for config in ['Debug','Release']:
   bs=dict(settings)
   bs.update({'SWIFT_OPTIMIZATION_LEVEL':'-Onone' if config=='Debug' else '-O','DEBUG_INFORMATION_FORMAT':'dwarf' if config=='Debug' else 'dwarf-with-dsym','SWIFT_ACTIVE_COMPILATION_CONDITIONS':'DEBUG' if config=='Debug' else ''})
-  if config=='Debug':bs['ENABLE_TESTABILITY']='YES'
+  if config=='Debug':bs.update({'ENABLE_TESTABILITY':'YES','ONLY_ACTIVE_ARCH':'YES'})
   cs.append(obj(name+config,isa='XCBuildConfiguration',buildSettings=bs,name=config))
  return obj(name+'configlist',isa='XCConfigurationList',buildConfigurations=cs,defaultConfigurationIsVisible='0',defaultConfigurationName='Release')
 projConfigs=configs('project',base)

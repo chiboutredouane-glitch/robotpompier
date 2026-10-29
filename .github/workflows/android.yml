@@ -43,6 +43,8 @@ jobs:
           set -euo pipefail
           mkdir -p build dist
           xcodebuild -project TelecommandeUniverselle.xcodeproj -scheme TelecommandeUniverselle -configuration Debug -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_ID" -derivedDataPath build/DerivedData -resultBundlePath build/Tests.xcresult CODE_SIGNING_ALLOWED=NO test | tee build/simulator.log
+      - name: Extraire l’aperçu simulé
+        run: xcrun xcresulttool export attachments --path build/Tests.xcresult --output-path build/previews
       - name: Compiler l’application pour iPhone physique sans signature
         run: |
           set -euo pipefail
@@ -73,5 +75,6 @@ jobs:
           path: |
             build/*.log
             build/*.xcresult
+            build/previews/
           if-no-files-found: warn
           retention-days: 30

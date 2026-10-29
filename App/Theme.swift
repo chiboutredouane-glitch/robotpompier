@@ -40,7 +40,7 @@ final class RemoteButton: UIButton {
     var onUp: (() -> Void)?
     var onClick: (() -> Void)?
     var mode: ButtonMode = .hold
-    private var held = false
+    private var touchHeld = false
     override init(frame: CGRect) {
         super.init(frame: frame)
         isExclusiveTouch = false; isMultipleTouchEnabled = false
@@ -53,12 +53,12 @@ final class RemoteButton: UIButton {
         addTarget(self, action: #selector(cancel), for: [.touchCancel, .touchUpOutside, .touchDragExit])
     }
     required init?(coder: NSCoder) { fatalError("Programmatic UI") }
-    @objc private func down() { guard isEnabled, !held else { return }; held = true; if mode == .hold { onDown?() } }
+    @objc private func down() { guard isEnabled, !touchHeld else { return }; touchHeld = true; if mode == .hold { onDown?() } }
     @objc private func releaseInside() {
-        guard held else { return }; held = false
+        guard touchHeld else { return }; touchHeld = false
         if mode == .hold { onUp?() } else if isEnabled { onClick?() }
     }
-    @objc func cancel() { guard held else { return }; held = false; if mode == .hold { onUp?() }; isHighlighted = false }
-    func clearTouch() { held = false; isHighlighted = false }
+    @objc func cancel() { guard touchHeld else { return }; touchHeld = false; if mode == .hold { onUp?() }; isHighlighted = false }
+    func clearTouch() { touchHeld = false; isHighlighted = false }
     override func accessibilityActivate() -> Bool { guard isEnabled else { return false }; onClick?(); return true }
 }

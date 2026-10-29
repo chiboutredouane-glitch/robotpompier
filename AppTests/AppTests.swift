@@ -26,6 +26,8 @@ final class FakeLink: RobotLink {
         for id in RobotProfile.ids {
             let b = button(id, in: vc.view); XCTAssertFalse(b.isEnabled); XCTAssertGreaterThanOrEqual(b.bounds.width, 44); XCTAssertGreaterThanOrEqual(b.bounds.height, 44)
         }
+        let image = UIGraphicsImageRenderer(size: vc.view.bounds.size).image { vc.view.layer.render(in: $0.cgContext) }
+        let attachment = XCTAttachment(image: image); attachment.name = "Dashboard iPhone paysage — rendu simulé"; attachment.lifetime = .keepAlways; add(attachment)
     }
     func testNativeDirectionEventsAndCancellationSendSOnlyOnce() {
         let (vc, link) = make(); vc.render(LinkState(phase: .connected, message: "Simulation", lastWritten: 83))
