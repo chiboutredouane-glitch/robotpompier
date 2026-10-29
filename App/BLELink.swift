@@ -53,7 +53,7 @@ final class BLELink: NSObject, RobotLink, CBCentralManagerDelegate, CBPeripheral
         default: message = "Initialisation Bluetooth…"
         }
         onScanNotice?(message)
-        if central.state == .unknown || central.state == .resetting { return }
+        if central.state == .unknown && peripheral == nil { return }
         retiring.removeAll(); finishScan(); fail(message)
     }
     func startScan() {
@@ -177,6 +177,6 @@ final class BLELink: NSObject, RobotLink, CBCentralManagerDelegate, CBPeripheral
         let old = peripheral; peripheral = nil; characteristic = nil; profile = nil
         queue.clear(); initializing = false; closing = false; session = UUID()
         old?.delegate = nil
-        if let old, old.state != .disconnected { retiring.insert(old.identifier); central.cancelPeripheralConnection(old) }
+        if let old, old.state != .disconnected, central.state == .poweredOn { retiring.insert(old.identifier); central.cancelPeripheralConnection(old) }
     }
 }

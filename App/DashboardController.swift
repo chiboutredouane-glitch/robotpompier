@@ -24,6 +24,10 @@ final class DashboardController: UIViewController {
         super.init(nibName: nil, bundle: nil); makeEngine()
     }
     required init?(coder: NSCoder) { fatalError("Programmatic UI") }
+    deinit {
+        let task = backgroundTask
+        if task != .invalid { DispatchQueue.main.async { UIApplication.shared.endBackgroundTask(task) } }
+    }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
     private func makeEngine() { engine = try! ControlEngine(profile: profile) { [weak self] byte in self?.link?.send(byte) } }
     override func viewDidLoad() {
