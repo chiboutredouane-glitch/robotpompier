@@ -1,99 +1,77 @@
-name: Android APK
-run-name: Télécommande universelle · ${{ github.ref_name }}
-
+name: iOS Télécommande universelle
+run-name: iPhone 1.0.3 · ${{ github.ref_name }}
 on:
   push:
-    branches: [telecommande-universelle]
+    branches: [telecommande-universelle-ios]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
-  group: universal-${{ github.ref }}
+  group: ios-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  build:
-    name: Compiler Télécommande universelle
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
     steps:
       - name: Récupérer les sources
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-
-      - name: Installer Java 21
-        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: gradle
-          cache-dependency-path: |
-            **/*.gradle.kts
-            gradle/wrapper/gradle-wrapper.properties
-
-      - name: Installer les outils Android
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
-        with:
-          packages: platform-tools
-          log-accepted-android-sdk-licenses: 'false'
-
-      - name: Installer le SDK
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Vérifier le wrapper Gradle
+      - name: Vérifier Xcode et le projet
         run: |
           set -euo pipefail
-          for file in gradlew gradlew.bat gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.properties settings.gradle.kts build.gradle.kts gradle.properties app/build.gradle.kts; do
-            test -s "$file"
-          done
-          test -x gradlew
-
-      - name: Compiler, tester et analyser
-        run: ./gradlew --no-daemon --console=plain assembleDebug testDebugUnitTest lintDebug
-
-      - name: Vérifier l’APK installable
+          xcodebuild -version
+          python3 scripts/project.py
+          plutil -lint App/Info.plist TelecommandeUniverselle.xcodeproj/project.pbxproj
+          xcodebuild -list -project TelecommandeUniverselle.xcodeproj
+      - name: Tester les commandes et les files d’écriture
+        run: swift test
+      - name: Choisir un simulateur iPhone
         run: |
           set -euo pipefail
-          mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/TelecommandeUniverselle-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose dist/TelecommandeUniverselle-debug.apk
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c 4 dist/TelecommandeUniverselle-debug.apk
+          xcrun simctl list devices available --json > /tmp/ios-devices.json
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import json
+          d=json.load(open('/tmp/ios-devices.json'))
+          devices=[x for group in d['devices'].values() for x in group if x['name'].startswith('iPhone') and x.get('isAvailable')]
+          if not devices: raise SystemExit('Aucun simulateur iPhone disponible')
+          print('IOS_SIMULATOR_ID='+devices[0]['udid'])
+          PY
+      - name: Compiler et tester l’interface iOS
+        run: |
+          set -euo pipefail
+          mkdir -p build dist
+          xcodebuild -project TelecommandeUniverselle.xcodeproj -scheme TelecommandeUniverselle -configuration Debug -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_ID" -derivedDataPath build/DerivedData -resultBundlePath build/Tests.xcresult CODE_SIGNING_ALLOWED=NO test | tee build/simulator.log
+      - name: Compiler l’application pour iPhone physique sans signature
+        run: |
+          set -euo pipefail
+          xcodebuild -project TelecommandeUniverselle.xcodeproj -scheme TelecommandeUniverselle -configuration Release -destination 'generic/platform=iOS' -archivePath build/TelecommandeUniverselle.xcarchive CODE_SIGNING_ALLOWED=NO archive | tee build/archive.log
+          mkdir -p dist/Payload
+          cp -R build/TelecommandeUniverselle.xcarchive/Products/Applications/TelecommandeUniverselle.app dist/Payload/
+          test -f dist/Payload/TelecommandeUniverselle.app/TelecommandeUniverselle
+          lipo -info dist/Payload/TelecommandeUniverselle.app/TelecommandeUniverselle
           cd dist
-          sha256sum TelecommandeUniverselle-debug.apk > SHA256SUMS.txt
-
-      - name: Publier l’APK
-        id: apk
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+          zip -qry TelecommandeUniverselle-1.0.3-non-signee.ipa Payload
+          shasum -a 256 TelecommandeUniverselle-1.0.3-non-signee.ipa > SHA256SUMS.txt
+          rm -rf Payload
+      - name: Publier le fichier à signer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: TelecommandeUniverselle-debug
+          name: TelecommandeUniverselle-iOS-NON-SIGNEE
           path: |
-            dist/TelecommandeUniverselle-debug.apk
+            dist/*.ipa
             dist/SHA256SUMS.txt
+            INSTALLATION.md
           if-no-files-found: error
           retention-days: 30
-
-      - name: Publier les rapports et aperçus simulés
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Publier les vérifications
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: TelecommandeUniverselle-verifications
+          name: TelecommandeUniverselle-iOS-verifications
           path: |
-            app/build/test-results/testDebugUnitTest/TEST-*.xml
-            app/build/reports/lint-results-debug.txt
-            app/build/reports/previews/*.png
-          if-no-files-found: error
+            build/*.log
+            build/*.xcresult
+          if-no-files-found: warn
           retention-days: 30
-
-      - name: Afficher le lien de téléchargement
-        run: |
-          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
-          ## Télécommande universelle — APK prêt
-          [Télécharger l’APK dans son ZIP](${{ steps.apk.outputs.artifact-url }})
-
-          Connectez-vous à GitHub, extrayez le ZIP puis installez **TelecommandeUniverselle-debug.apk**.
-          Cette application s’installe à côté de Robot Pompier. Aucun Android Studio n’est nécessaire.
-          Les aperçus sont issus de tests Android simulés, pas d’une connexion à un vrai robot.
-          Les artefacts sont conservés 30 jours. Pour une nouvelle exécution, sélectionnez la branche **telecommande-universelle** dans Run workflow.
-          EOF

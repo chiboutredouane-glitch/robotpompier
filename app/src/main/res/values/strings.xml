@@ -1,7 +1,0 @@
-<resources>
-    <string name="app_name">Télécommande universelle</string>
-    <string name="safety_caption">Arrêt : %1$s</string>
-    <string name="reserved_caption">%1$s\n%2$s</string>
-    <string name="connection_caption">● %1$s</string>
-    <string name="new_robot_name">Robot %1$d</string>
-</resources>

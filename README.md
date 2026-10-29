@@ -1,128 +1,57 @@
-# Télécommande universelle — Android Kotlin
+# Télécommande universelle — iPhone 1.0.3
 
-Télécommande native pour **Bluetooth Classic SPP (HC-05/HC-06)** et **Bluetooth BLE série (profil MLT-BT05 FFE0/FFE1, modifiable)**. Huit boutons configurables, profils de robots mémorisés, mode paysage et affichage TX. Android 6.0/API 23 minimum, cible Android 15/API 35.
+Portage natif Swift/UIKit de la télécommande Android 1.0.3. Paysage, quatre directions et quatre fonctions renommables, événements appui/relâchement ou interrupteur, profils mémorisés, commandes ASCII sans saut de ligne, TX et diagnostic local. iOS/iPadOS **16 minimum**.
 
-Application distincte de Robot Pompier : identifiant `fr.telecommande.universelle`, nom **Télécommande universelle**, version **1.0.3**. Elle peut être installée en même temps que Robot Pompier. Les sources de cette application sont sur la branche **telecommande-universelle** ; la branche **main** conserve Robot Pompier.
+## Bluetooth compatible
 
-## Télécharger sans Android Studio
+**BLE uniquement**, via CoreBluetooth. Les HC-05 et HC-06 usuels utilisent Bluetooth Classic SPP et **ne fonctionnent pas avec cette application iPhone**. Leur fonctionnement avec l’application Android ne change pas cette restriction iOS. Un appareil Classic compatible MFi nécessiterait un protocole et un développement distincts ; aucun n’est supposé ici.
 
-1. Se connecter à GitHub puis ouvrir [Actions](https://github.com/chiboutredouane-glitch/robotpompier/actions/workflows/android.yml?query=branch%3Atelecommande-universelle).
-2. Ouvrir une exécution **Télécommande universelle · telecommande-universelle** réussie, puis la section **Artifacts**.
-3. Télécharger **TelecommandeUniverselle-debug**, extraire le ZIP et récupérer **TelecommandeUniverselle-debug.apk**.
-4. Transférer l’APK sur le téléphone, l’ouvrir et autoriser l’installation depuis l’application utilisée pour ouvrir le fichier.
+Le profil BLE est prérempli pour le **MLT-BT05** : service `FFE0`, caractéristique `FFE1`. Les UUID complets ou courts sont modifiables par profil. L’application découvre les services réels et vérifie que la caractéristique permet WRITE ou WRITE_WITHOUT_RESPONSE. Les modules vendus sous des noms proches peuvent utiliser d’autres UUID.
 
-Les artefacts restent disponibles 30 jours. Pour reconstruire : **Actions > Android APK > Run workflow**, choisir **telecommande-universelle** puis **Run workflow**. Le même fichier de workflow existe sur `main` pour Robot Pompier : sélectionner la bonne branche est nécessaire.
+La recherche dure 12 secondes, sans filtre de service pour retrouver les modules qui n’annoncent pas FFE0. L’iPhone demande l’autorisation Bluetooth. Aucune permission de localisation, compte en ligne ni connexion Internet n’est nécessaire au pilotage. Aucun appareil n’est reconnecté automatiquement.
 
-Pour télécharger les sources : sélectionner la branche **telecommande-universelle** puis **Code > Download ZIP**, ou utiliser [ce ZIP source](https://github.com/chiboutredouane-glitch/robotpompier/archive/refs/heads/telecommande-universelle.zip). Le ZIP de l’artefact APK contient l’application, pas le projet source.
+## Commandes par défaut
 
-L’artefact **TelecommandeUniverselle-verifications** contient les résultats des tests, Android Lint et des aperçus rendus par Robolectric. Les vues marquées « simulation » ne constituent pas des essais radio ou une connexion réelle au module.
-
-## Premier lancement
-
-Le profil **Hum-Bot** reprend les commandes confirmées dans les blocs MIT fournis. Le fichier `.sb2` appartenait à un autre projet et n’est pas utilisé.
-
-| Bouton | Mode | Appui / activation | Relâchement / désactivation |
+| Bouton | Mode | Appui / ON | Relâchement / OFF |
 | --- | --- | --- | --- |
-| Avancer | Appui / relâchement | `A` | `S` |
-| Reculer | Appui / relâchement | `R` | `S` |
-| Gauche | Appui / relâchement | `G` | `S` |
-| Droite | Appui / relâchement | `D` | `S` |
-| Réservé 1 : Phares | Interrupteur | `F` | `f` |
-| Réservé 2 : Feux stop | Interrupteur | `T` | `t` |
-| Réservé 3 : Klaxon | Interrupteur | `K` | `k` |
-| Réservé 4 : Détresse | Interrupteur | `X` | `x` |
+| Avancer | Maintenir | `A` | `S` |
+| Reculer | Maintenir | `R` | `S` |
+| Gauche | Maintenir | `G` | `S` |
+| Droite | Maintenir | `D` | `S` |
+| Phares | Interrupteur | `F` | `f` |
+| Feux stop | Interrupteur | `T` | `t` |
+| Klaxon | Interrupteur | `K` | `k` |
+| Détresse | Interrupteur | `X` | `x` |
 
-Un interrupteur agit au clic validé : premier clic = activation, deuxième clic = désactivation. Un appui annulé n’active rien. Un bouton en mode appui/relâchement envoie son premier caractère dès le contact, et son second lorsque le doigt est levé, sort du bouton ou que le geste est annulé. La pompe ou d’autres fonctions d’un ancien projet ne sont pas ajoutées automatiquement.
+Les quatre fonctions affichent leur nom et leur état demandé, sans sous-titre automatique « Réservé 1…4 ». Leur nom est indépendant des lettres. Le fichier SB2 d’un autre projet n’est pas utilisé.
 
-`S` est ici un arrêt global du déplacement. Si plusieurs directions sont maintenues, le relâchement de l’une envoie `S` et ne relance pas automatiquement l’autre. Les quatre boutons supplémentaires peuvent être utilisés pendant un déplacement. Leur nom n’impose aucune lettre au robot.
+Dans **Réglages**, choisir le bouton, modifier son nom, son mode et les deux événements, puis **Enregistrer**. Une commande est un caractère ASCII visible (33–126) ou un champ vide pour aucun envoi. Espaces, accents, sauts de ligne et commandes de plusieurs caractères sont refusés. Les noms acceptent les accents (24 caractères par bouton, 40 par profil). Maximum 30 profils ; création, copie, sélection et suppression sont disponibles. Annuler abandonne le brouillon ; supprimer un profil enregistré demande confirmation.
 
-## Modifier les boutons et profils
+## Sécurité et états
 
-1. Sélectionner un profil dans la liste en haut de l’écran, puis ouvrir **Réglages**. La connexion est fermée avec tentative d’arrêt avant l’ouverture des réglages.
-2. Choisir le bouton à modifier dans la liste des huit boutons.
-3. Modifier son **nom**, son **mode**, ses commandes **À l’appui / Au relâchement**, ou **Activation / Arrêt** pour un interrupteur.
-4. Appuyer sur **Enregistrer**. Reconnecter le robot ensuite.
+Le caractère de sécurité du profil (`S` par défaut) est envoyé une fois à la connexion avant activation des boutons. Il est normal de voir **TX : S** sans avoir touché une commande. Les directions envoient leur arrêt au relâchement, à la sortie du doigt ou à l’annulation du geste. Les contrôles peuvent être utilisés indépendamment avec deux doigts.
 
-Chaque commande est **un seul caractère ASCII visible**. Majuscules, minuscules, chiffres et symboles sont conservés exactement. Un champ vide signifie **aucun envoi** ; les espaces, retours chariot, sauts de ligne, caractères accentués et commandes de plusieurs caractères sont refusés. Les noms, eux, peuvent contenir des accents. Renommer un bouton ne modifie pas ses commandes.
+Le départ vers les réglages, le changement de profil, la fin de session, un appel ou le passage en arrière-plan désactivent les boutons, abandonnent les commandes en attente et tentent l’arrêt du profil suivi des seules désactivations effectivement demandées ON. Exemple Hum-Bot : **`Sf`** si les phares étaient activés. La commande en cours est conservée, puis la séquence d’arrêt est prioritaire ; fermeture forcée après deux secondes. Une courte tâche d’arrière-plan est demandée à iOS pour terminer cette tentative, sans mode de pilotage permanent en arrière-plan.
 
-Les réglages restent sur le téléphone après fermeture. **Nouveau profil** propose la base Hum-Bot ou quatre réservés sans commande. **Copier ce profil** conserve ses réglages mais efface l’appareil mémorisé. **Supprimer** demande confirmation ; la suppression du dernier profil rétablit Hum-Bot. La sélection du profil est mémorisée. Sortir des réglages sans enregistrer abandonne les modifications.
+Une coupure radio ou un arrêt brutal de l’iPhone peut empêcher l’envoi. L’arrêt physique sur perte de liaison doit aussi être assuré dans le programme du robot. Aucun heartbeat ni caractère supplémentaire n’est ajouté.
 
-Les noms de profils sont limités à 40 caractères et ceux des boutons à 24. Maximum : 30 profils. Aucun compte, serveur ni stockage cloud n’est nécessaire au fonctionnement de la télécommande.
+**TX** décrit une écriture côté iPhone, sans garantir l’exécution physique. En WRITE_WITHOUT_RESPONSE, aucune confirmation ATT du module n’existe. Les écritures sont sérialisées ; ce mode respecte le contrôle de flux CoreBluetooth et une cadence de 60 ms. WRITE avec réponse est préféré lorsqu’il est proposé, avec délai de réponse limité. ON/OFF désigne une commande demandée, pas un capteur. La réception RX n’est pas implémentée.
 
-## Bluetooth Classic
+L’état rouge ouvre le dernier diagnostic, conservé localement et copiable. Le bouton **Fin** termine la session ; iOS ne permet pas à l’application de se fermer elle-même comme avec le bouton Quitter d’Android.
 
-Choisir **Classic**, puis **Connecter**. Sélectionner un appareil déjà appairé. Le HC-05/HC-06 doit d’abord être appairé dans les paramètres Android. La connexion utilise RFCOMM avec l’UUID SPP `00001101-0000-1000-8000-00805f9b34fb`.
+## Compiler et installer
 
-Le bouton devient **Annuler** pendant la connexion, puis **Déconnecter** une fois prêt. Le voyant vert n’apparaît qu’après la connexion et l’écriture de la commande d’arrêt initiale du profil.
-
-## Bluetooth BLE
-
-Choisir **BLE**, puis **Connecter**. La recherche dure 12 secondes et les appareils sont affichés au fur et à mesure. Aucune obligation d’appairage préalable. Le dernier appareil choisi peut être repris avec **Dernier appareil**.
-
-Le profil MLT-BT05 est prérempli avec :
-
-- Service : `0000ffe0-0000-1000-8000-00805f9b34fb`.
-- Caractéristique d’écriture : `0000ffe1-0000-1000-8000-00805f9b34fb`.
-
-Ces identifiants sont issus des informations fournies par l’utilisateur. L’application les **vérifie sur les services réellement découverts**. Ils ne sont pas présumés corrects pour tous les modules vendus sous un même nom. Les UUID restent modifiables dans les réglages ; `FFE0`, `0xFFE0`, une forme sur huit chiffres hexadécimaux ou un UUID complet sont acceptés.
-
-Une caractéristique sans propriété **WRITE** ou **WRITE_NO_RESPONSE** est refusée et les boutons restent désactivés. WRITE avec réponse est préféré quand il est disponible. Les écritures sont sérialisées ; le mode sans réponse est cadencé et les callbacks tardifs ne peuvent pas consommer la commande suivante. Les notifications RX ne sont pas nécessaires et ne sont pas exploitées dans cette version.
-
-## Autorisations Android
-
-- Android 12+ : **Appareils à proximité**, avec `BLUETOOTH_CONNECT` et `BLUETOOTH_SCAN`, déclaré sans usage de localisation. SCAN sert à la recherche BLE et à annuler une recherche concurrente avant une connexion Classic.
-- Android 6 à 11 : la recherche BLE exige l’autorisation de localisation et l’activation du service de localisation du téléphone. L’application ne lit ni ne collecte la position ; ce contrôle est imposé par Android pour la recherche BLE.
-- Le Bluetooth désactivé provoque une demande système d’activation. L’application ne modifie pas silencieusement l’état du Bluetooth.
-
-## Version 1.0.3 — connexion Classic sans réception
-
-Le projet MIT fourni appelle Connect et SendText, sans ReceiveText ni autre méthode de réception. Son client Classic crée les flux à la connexion mais n’effectue pas de lecture en attente dans cette configuration. La version 1.0.3 retire donc la lecture SPP permanente de la télécommande, qui n’a aucun protocole RX. La connexion conserve l’UUID SPP et le mode sécurisé par défaut de MIT.
-
-La perte de liaison est surveillée avec les événements système protégés **ACTION_ACL_DISCONNECTED** et **ACTION_ACL_DISCONNECT_REQUESTED**, pour l’adresse de l’appareil sélectionné uniquement. Une déconnexion d’un autre appareil ne ferme pas la session. Les erreurs d’envoi, délais d’écriture et règles d’arrêt restent actifs. Le récepteur est désinscrit à la fermeture. Aucun heartbeat, répétition de commande ou reconnexion automatique n’est ajouté. Le `S` initial de sécurité est conservé.
-
-Cette adaptation cible la différence constatée avec MIT et l’erreur de lecture après environ 25 secondes signalée sur le téléphone. La suppression de l’opération de lecture est vérifiée en test, mais la disparition de la coupure et le contrôle effectif des LED après une minute doivent encore être vérifiés avec le module réel. Le voyant Android n’est pas une preuve de réception par le robot : vérifier aussi l’action physique après l’attente et le retour au rouge lorsque le module est éteint.
-
-Comparaison effectuée avec les [sources BluetoothClient MIT](https://github.com/mit-cml/appinventor-sources/blob/master/appinventor/components/src/com/google/appinventor/components/runtime/BluetoothClient.java) et [BluetoothConnectionBase MIT](https://github.com/mit-cml/appinventor-sources/blob/master/appinventor/components/src/com/google/appinventor/components/runtime/BluetoothConnectionBase.java), ainsi qu’avec les blocs du fichier AIA fourni. Le projet SB2 indépendant reste exclu.
-
-## Version 1.0.2
-
-Les quatre boutons de fonctions affichent leur nom personnalisé et leur état demandé, sans la ligne automatique « Réservé 1…4 ». Les noms enregistrés, modes et lettres restent inchangés.
-
-Avant une connexion Classic, l’application annule la découverte Bluetooth Android pour éviter une recherche concurrente à la liaison RFCOMM. Sur Android 12+, l’autorisation SCAN est aussi demandée en Classic : elle est nécessaire pour cette annulation et fait partie des Appareils à proximité. Aucune recherche Classic n’est lancée par l’application.
-
-Les erreurs Classic précisent désormais l’opération concernée (connexion, arrêt initial, lecture ou envoi), la durée depuis la tentative et le détail IOException fourni par Android. La fin du flux SPP est distinguée d’une erreur. Aucun acquittement du robot ni caractère supplémentaire n’est exigé. La cause de la coupure observée sur le téléphone reste à confirmer ; l’erreur générale de la version précédente ne permettait pas de l’identifier.
-
-## Identifier une déconnexion
-
-Depuis la version **1.0.1**, un diagnostic local est accessible en touchant **l’état rouge** après la coupure. Il conserve le motif exact, le mode Classic/BLE, la version Android et jusqu’à vingt dernières valeurs TX affichées de la session (valeurs successives identiques regroupées). Le diagnostic reste disponible après fermeture et réouverture ; la mise en arrière-plan ne remplace plus le message initial de panne. Aucun diagnostic n’est envoyé sur Internet. Depuis la version 1.0.2, le dialogue défile si nécessaire et propose **Copier** pour relever le texte exact. Il est accessible uniquement à l’arrêt pour ne pas interrompre une liaison active.
-
-Le diagnostic aide à distinguer une perte radio, une erreur/délai GATT et une interruption de sécurité par perte du focus. Cette version ne prétend pas corriger une panne radio non reproduite. Les commandes, les délais et les règles de sécurité sont conservés. Après une coupure, relever le texte du diagnostic et le modèle du module pour cibler la correction.
-
-## TX, états et arrêt de sécurité
-
-**TX** affiche le dernier caractère écrit côté téléphone avec son code hexadécimal, par exemple `TX : S · 0x53`. Il ne prouve ni la réception UART par le microcontrôleur ni l’exécution d’une action physique. En BLE sans réponse, il correspond à une écriture acceptée par la pile Android, sans acquittement ATT.
-
-Les mentions **ON/OFF demandé** représentent les commandes de l’utilisateur, pas des capteurs. L’état initial des fonctions est **—** : aucune position physique n’est présumée et aucune activation passée n’est reprise automatiquement.
-
-Chaque profil définit un **arrêt de sécurité** obligatoire, `S` par défaut. Il est envoyé à la connexion. Lors d’une déconnexion volontaire, fermeture, ouverture des réglages, changement de profil/mode, perte du focus, verrouillage ou mise en arrière-plan, l’application désactive les commandes puis tente :
-
-1. L’arrêt de sécurité configuré.
-2. Les commandes de relâchement/désactivation des boutons effectivement maintenus ou demandés ON, sans doublons.
-
-Exemple Hum-Bot : si les phares ont été activés, la fermeture tente **`Sf`**. Elle n’envoie pas `F`, qui activerait les phares. Aucune séquence d’un autre robot n’est imposée. La fermeture de la liaison est forcée après un délai de 2 secondes si les écritures ne se terminent pas. Les mouvements en attente sont abandonnés avant la séquence d’arrêt.
-
-Une coupure radio ou l’arrêt brutal du téléphone peut empêcher toute livraison de l’arrêt. Le robot doit assurer son interverrouillage physique sur perte de connexion, indépendamment du téléphone. Aucun caractère de heartbeat non prévu par le protocole n’est ajouté. La détection de perte de liaison dépend des délais de la pile Bluetooth ; elle n’est pas instantanée.
-
-## Compiler et vérifier
-
-Ouvrir ce dossier dans Android Studio, installer le SDK Android 35 et Build Tools 35.0.0, puis utiliser Java 21 et :
+Voir [INSTALLATION.md](INSTALLATION.md). Le dépôt contient le projet Xcode complet et un paquet Swift indépendant pour tester les commandes.
 
 ```sh
-./gradlew assembleDebug testDebugUnitTest lintDebug
+swift test
+xcodebuild -project TelecommandeUniverselle.xcodeproj -scheme TelecommandeUniverselle -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-Sous Windows, utiliser `gradlew.bat`. Le wrapper Gradle complet est inclus, avec validation SHA-256 de la distribution Gradle 8.13. Android Gradle Plugin 8.9.2, Kotlin 2.1.20, bytecode Java 17. L’APK est créé dans `app/build/outputs/apk/debug/app-debug.apk`.
+Dans Xcode, sélectionner sa Team et un identifiant d’application disponible pour signer une installation sur son propre iPhone. Aucune Team, clé, certificat, profil de provisioning ni mot de passe n’est fourni dans le dépôt.
 
-Les tests couvrent les octets ASCII, les événements tactiles, les interrupteurs, les profils, les réglages, l’arrêt, les UUID, la découverte GATT et les écritures avec et sans réponse. Ils utilisent Robolectric et un framework Android simulé : ils ne remplacent pas les essais sur téléphone et modules réels. Voir `docs/RECETTE.md` et `VERIFICATION.md`.
+Le workflow GitHub compile sur macOS, teste les commandes et les événements UIKit dans un simulateur, puis archive une application arm64 et emballe un **IPA NON SIGNÉ**. Ce fichier **ne s’installe pas directement** : il doit être signé localement ou publié via un compte Apple Developer autorisé. Une archive simulateur n’est pas un programme installable sur téléphone.
 
-L’APK debug est signé automatiquement pour les essais. Aucune clé privée n’est fournie, aucun secret GitHub personnel n’est nécessaire. Une reconstruction peut avoir une autre clé debug : si Android refuse une mise à jour pour incompatibilité de signature, désinstaller cette application avant d’installer le nouvel APK. Pour une distribution durable, utiliser une clé de production appartenant au propriétaire du projet.
+Les sources sont sur la branche **telecommande-universelle-ios** du dépôt robotpompier. `main` conserve Robot Pompier et `telecommande-universelle` conserve l’application Android. Le fichier de workflow utilise le chemin existant `android.yml` pour permettre son lancement manuel depuis le workflow déjà enregistré : choisir explicitement la branche iOS.
+
+Les tests automatiques ne remplacent pas les essais radio avec un véritable iPhone et un module BLE. Voir [VERIFICATION.md](VERIFICATION.md).
